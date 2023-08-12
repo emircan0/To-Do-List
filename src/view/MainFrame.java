@@ -139,7 +139,7 @@ public class MainFrame extends JFrame {
 
             String text = ((JTextPane) newPanel.getComponent(1)).getText();
             int panelIndex = panelContainer.getComponentCount();
-            dataManager.setProperty("text" + panelIndex, text);
+           
         });
 
         // Kaydet butonu ve kodları eklendi
@@ -147,16 +147,20 @@ public class MainFrame extends JFrame {
         controlPanel.add(btnSave);
 
         btnSave.addActionListener(e -> {
-            for (int i = 0; i < panelContainer.getComponentCount(); i++) {
-                JPanel panel = (JPanel) panelContainer.getComponent(i);
-                JTextPane textPane = (JTextPane) panel.getComponent(1);
-                String text = textPane.getText();
-                dataManager.setProperty("text" + (i + 1), text);
+            for (Component component : panelContainer.getComponents()) {
+                if (component instanceof JPanel) {
+                    JPanel panel = (JPanel) component;
+                    JTextPane textPane = (JTextPane) panel.getComponent(1);
+                    String text = textPane.getText();
+                    dataManager.setProperty("text" + (panelContainer.getComponentZOrder(panel) + 1), text);
+                }
             }
         });
 
+
+
         // Kaydedilmiş metinleri yükleme
-        for (int i = 1; i <= 10; i++) {
+        for (int i = 0; i <= 1000; i++) {
             String text = dataManager.getProperty("text" + i);
             if (!text.isEmpty()) {
                 JPanel newPanel = createNewPanel();
@@ -216,16 +220,32 @@ public class MainFrame extends JFrame {
                     JOptionPane.WARNING_MESSAGE);
 
             if (result == JOptionPane.YES_OPTION) {
-                panelContainer.remove(panel);
-                panelContainer.revalidate();
-                panelContainer.repaint();
-
-                // Kaydı da sil
                 int panelIndex = panelContainer.getComponentZOrder(panel) + 1;
                 dataManager.setProperty("text" + panelIndex, "");
+
+                panelContainer.remove(panel);
+                revalidate();
+                repaint();
+
+                // Re-index saved properties if needed
+                int savedPropertiesCount = 0;
+                for (int i = 1; i <= panelContainer.getComponentCount(); i++) {
+                    Component comp = panelContainer.getComponent(i - 1);
+                    if (comp instanceof JPanel) {
+                        savedPropertiesCount++;
+                        String text = dataManager.getProperty("text" + (i + 1));
+                        dataManager.setProperty("text" + i, text);
+                        dataManager.setProperty("text" + (i + 1), "");
+                    }
+                }
+
+                // Remove the last unused saved property
+                dataManager.setProperty("text" + (savedPropertiesCount + 1), "");
             }
         });
 
+
         return panel;
+
     }
 }
